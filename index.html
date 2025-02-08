@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Tracker</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        table { width: 80%; margin: 20px auto; border-collapse: collapse; }
+        th, td { border: 1px solid black; padding: 10px; }
+        .tracked { margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <h1>Crypto Tracker</h1>
+    <h2>Top 10 Cryptos</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Price (INR)</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="cryptoTable"></tbody>
+    </table>
+
+    <h2>Tracked Coins</h2>
+    <table class="tracked">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Price (INR)</th>
+                <th>Remove</th>
+            </tr>
+        </thead>
+        <tbody id="trackedTable"></tbody>
+    </table>
+
+    <script>
+        const API_URL = "http://localhost:5000";
+
+        async function fetchCrypto() {
+            try {
+                const res = await fetch(`${API_URL}/api/crypto`);
+                const data = await res.json();
+
+                console.log("Crypto Data:", data); // Debugging log
+
+                const table = document.getElementById("cryptoTable");
+                table.innerHTML = "";
+                data.forEach(coin => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${coin.name} (${coin.symbol.toUpperCase()})</td>
+                        <td>₹${coin.current_price}</td>
+                        <td><button onclick="trackCoin('${coin.id}', '${coin.name}', ${coin.current_price}, event)">Track</button></td>
+                    `;
+                    table.appendChild(row);
+                });
+            } catch (error) {
+                console.error("Error fetching crypto data:", error);
+            }
+        }
+
+        async function fetchTracked() {
+            try {
+                const res = await fetch(`${API_URL}/api/tracked`);
+                const data = await res.json();
+
+                // console.log("Tracked Coins:", data); // Debugging log
+
+                const table = document.getElementById("trackedTable");
+                table.innerHTML = "";
+                data.forEach(coin => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${coin.name}</td>
+                        <td class="tracked-price" data-id="${coin.id}">₹${coin.price}</td>
+                        <td><button onclick="removeCoin('${coin.id}', event)">Remove</button></td>
+                    `;
+                    table.appendChild(row);
+                });
+            } catch (error) {
+                console.error("Error fetching tracked coins:", error);
+            }
+        }
+
+        async function trackCoin(id, name, price, event) {
+            if (event) event.preventDefault(); 
+
+            await fetch(`${API_URL}/api/tracked`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, name, price })
+            });
+
+            fetchTracked(); 
+        }
+
+        async function removeCoin(id, event) {
+            if (event) event.preventDefault(); 
+
+            await fetch(`${API_URL}/api/tracked/${id}`, { method: "DELETE" });
+
+            fetchTracked(); 
+        }
+
+        fetchCrypto();
+        fetchTracked();
+
+    </script>
+
+</body>
+</html>
